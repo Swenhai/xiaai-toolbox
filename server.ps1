@@ -60,10 +60,13 @@ function Invoke-UpdateApply {
         $zip = Join-Path $RootDir "update_pkg.zip"
         $downloaded = $false
         foreach ($u in (Get-UpdateZipUrls $m.zip)) {
-            try {
-                Invoke-WebRequest -Uri $u -OutFile $zip -TimeoutSec 180 -UseBasicParsing
-                if ((Get-Item $zip).Length -gt 1000) { $downloaded = $true; break }
-            } catch {}
+            for ($try = 1; $try -le 2; $try++) {
+                try {
+                    Invoke-WebRequest -Uri $u -OutFile $zip -TimeoutSec 180 -UseBasicParsing
+                    if ((Get-Item $zip).Length -gt 1000) { $downloaded = $true; break }
+                } catch { Start-Sleep -Seconds 3 }
+            }
+            if ($downloaded) { break }
         }
         if (-not $downloaded) { return "更新包下载失败，请检查网络后重试" }
         $dst = Join-Path $RootDir "_update_tmp"
@@ -73,15 +76,23 @@ function Invoke-UpdateApply {
         # 起一个隐藏更新器：等服务退出后替换文件并重启
         $updater = Join-Path $RootDir "_do_update.ps1"
         @"
-Start-Sleep -Seconds 2
+# 等旧服务退出（最多60秒），再替换文件并重启
+$probe = New-Object System.Net.Sockets.TcpClient
+for ($wi = 0; $wi -lt 60; $wi++) {
+  Start-Sleep -Seconds 1
+  try { $probe.Connect('127.0.0.1', $Port); $probe.Close(); $probe = New-Object System.Net.Sockets.TcpClient }
+  catch { break }
+}
 try {
   Copy-Item -Path (Join-Path '$dst' '*') -Destination '$RootDir' -Recurse -Force
   Remove-Item '$dst' -Recurse -Force -ErrorAction SilentlyContinue
   Remove-Item '$zip' -Force -ErrorAction SilentlyContinue
 } catch {}
-Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','"$RootDir\server.ps1"','-Port','$Port' -WindowStyle Hidden
+$ps = if ($env:OS -eq 'Windows_NT') { 'powershell' } else { 'pwsh' }
+Start-Process $ps -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','"$RootDir\server.ps1"','-Port','$Port' -WindowStyle Hidden
 "@ | Out-File -FilePath $updater -Encoding UTF8
-        Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',"`"$updater`"" -WindowStyle Hidden
+        $psExe = if ($env:OS -eq 'Windows_NT') { 'powershell' } else { 'pwsh' }
+Start-Process $psExe -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',"`"$updater`"" -WindowStyle Hidden
         return $null
     } catch {
         return "更新失败: " + $_.Exception.Message
