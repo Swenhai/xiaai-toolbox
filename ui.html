@@ -404,6 +404,18 @@ async function delJob(id){
 }
 pollJobs();if(!jobT)setTimeout(()=>{if(document.getElementById('joblist').innerHTML==='')pollJobs();},500);
 loadCDrive();
+/* ---------- 启动自动检查更新 ---------- */
+async function autoUpdateCheck(){
+  try{
+    const r=await (await fetch('/api/update/check')).json();
+    if(r.ok&&r.hasUpdate){
+      const tab=document.querySelector('.tab[data-p=about]');
+      if(tab&&!tab.querySelector('.updot')){const d=document.createElement('span');d.className='updot';d.textContent='🔴';d.style.cssText='font-size:8px;position:absolute;top:10px;margin-left:2px';tab.style.position='relative';tab.appendChild(d);}
+      snack('🎉 发现新版本 v'+r.version+'！去「关于」页看看更新了什么');
+    }
+  }catch(e){}
+}
+setTimeout(autoUpdateCheck,1500);
 /* ---------- 云端更新 ---------- */
 async function checkUpdate(){
   const b=document.getElementById('btnUpd');b.disabled=true;b.innerHTML='<span class="spin"></span> 检查中...';
@@ -414,7 +426,8 @@ async function checkUpdate(){
     if(!r.ok){m.innerHTML=esc(r.err||'检查失败');}
     else if(!r.hasUpdate){m.innerHTML='✓ 已经是最新版本啦';}
     else{
-      m.innerHTML='🎉 发现新版本 <b style="color:var(--pri)">v'+esc(r.version)+'</b>'+(r.notes?'<br>'+esc(r.notes):'');
+      const lines=String(r.notes||'').split(/\n/).filter(x=>x.trim()).map(x=>'· '+esc(x)).join('<br>');
+      m.innerHTML='<div style="text-align:left;background:var(--surf2);border-radius:12px;padding:10px 12px;margin-top:8px"><b style="color:var(--pri)">🎉 新版本 v'+esc(r.version)+'</b>（当前 v'+esc(r.current)+'）'+(lines?'<div style="margin-top:6px;line-height:1.9">'+lines+'</div>':'')+'</div>';
       b.innerHTML='⬆️ 一键更新到 v'+esc(r.version);
       b.onclick=applyUpdate;
     }
