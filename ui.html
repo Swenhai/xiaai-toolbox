@@ -85,6 +85,14 @@ body{
 .bar{height:7px;border-radius:4px;background:#f2dbe6;overflow:hidden;margin-top:9px}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,#f062ae,#e91e8c);border-radius:4px;transition:width .4s}
 .mvlog{font-size:11px;color:var(--tx3);margin-top:8px;line-height:1.6;max-height:70px;overflow-y:auto}
+/* 更新弹窗 */
+.updlg{position:absolute;inset:0;background:rgba(40,10,25,.5);z-index:25;display:none;align-items:center;justify-content:center;padding:24px}
+.updlg.show{display:flex}
+.upcard{background:var(--surf);border-radius:26px;padding:22px 20px;width:100%;max-width:340px;animation:up .25s ease;text-align:center}
+.upcard .ic{font-size:36px}
+.upcard h3{font-size:16.5px;color:var(--tx);margin:6px 0 4px}
+.upcard .cur{font-size:11px;color:var(--tx3)}
+.upcard .notes{font-size:12.5px;color:var(--tx2);text-align:left;background:var(--surf2);border-radius:12px;padding:12px 14px;margin:12px 0;line-height:2}
 /* tab */
 .tabbar{position:absolute;bottom:0;left:0;right:0;height:74px;background:var(--surf);border-top:1px solid #f3dce8;display:flex;flex:none;z-index:5}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10.5px;color:var(--tx3);font-weight:700;cursor:pointer}
@@ -224,6 +232,18 @@ body{
       <button class="bigbtn" id="btnMove" onclick="confirmMove()">🚚 开始搬家</button>
       <button class="bigbtn" style="background:#eee;color:#777;box-shadow:none;height:44px;font-size:13px" onclick="closeDlg()">先不搬了</button>
       <div class="mvlog" id="mvlog"></div>
+    </div>
+  </div>
+
+  <div class="updlg" id="updlg">
+    <div class="upcard">
+      <div class="ic">🎁</div>
+      <h3>小艾艾的工具箱更新啦</h3>
+      <div class="cur" id="updcur">当前版本 v1.1.1</div>
+      <div class="notes" id="updnotes"></div>
+      <button class="bigbtn" id="btnUpdNow" style="margin-top:0;height:48px" onclick="doUpdateNow()">⬆️ 立即更新</button>
+      <button class="bigbtn" style="background:#f2e6ec;color:#8a707e;box-shadow:none;height:42px;font-size:13px" onclick="closeUpd()">稍后再说</button>
+      <div class="mvlog" id="updlog"></div>
     </div>
   </div>
 
@@ -416,6 +436,41 @@ async function autoUpdateCheck(){
   }catch(e){}
 }
 setTimeout(autoUpdateCheck,1500);
+/* 使用中每10分钟检查一次，发现新版本弹窗提醒 */
+let updVersion='',updNotes='';
+async function updatePoller(){
+  try{
+    const r=await (await fetch('/api/update/check')).json();
+    if(r.ok&&r.hasUpdate&&!document.getElementById('updlg').classList.contains('show')){
+      updVersion=r.version;updNotes=r.notes||'';
+      document.getElementById('updcur').textContent='当前版本 v'+r.current;
+      const lines=String(updNotes).split(/\n/).filter(x=>x.trim()).map(x=>'· '+esc(x)).join('<br>');
+      document.getElementById('updnotes').innerHTML=lines||'修复了一些小问题，体验更棒啦';
+      document.getElementById('updlog').textContent='';
+      const b=document.getElementById('btnUpdNow');b.disabled=false;b.innerHTML='⬆️ 立即更新';
+      document.getElementById('updlg').classList.add('show');
+      const tab=document.querySelector('.tab[data-p=about]');
+      if(tab&&!tab.querySelector('.updot')){const d=document.createElement('span');d.className='updot';d.textContent='🔴';d.style.cssText='font-size:8px;position:absolute;top:10px;margin-left:2px';tab.style.position='relative';tab.appendChild(d);}
+    }
+  }catch(e){}
+}
+setInterval(updatePoller,10*60*1000);
+function closeUpd(){document.getElementById('updlg').classList.remove('show');}
+async function doUpdateNow(){
+  const b=document.getElementById('btnUpdNow');b.disabled=true;b.innerHTML='<span class="spin"></span> 下载更新中，请稍等...';
+  const lg=document.getElementById('updlog');
+  lg.textContent='正在下载更新包...';
+  try{
+    const r=await (await fetch('/api/update/apply',{method:'POST',body:'{}'})).json();
+    if(r.ok){
+      lg.innerHTML='✓ 更新包已就位，正在重启小艾艾...<br>界面马上会刷新';
+      setTimeout(()=>{fetch('/api/quit',{method:'GET'}).catch(()=>{});location.reload();},2500);
+    } else {
+      lg.innerHTML='❌ '+esc(r.err||'更新失败，稍后再试');
+      b.disabled=false;b.innerHTML='⬆️ 重试更新';
+    }
+  }catch(e){lg.innerHTML='更新请求失败';b.disabled=false;}
+}
 /* ---------- 云端更新 ---------- */
 async function checkUpdate(){
   const b=document.getElementById('btnUpd');b.disabled=true;b.innerHTML='<span class="spin"></span> 检查中...';
