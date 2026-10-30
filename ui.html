@@ -1,0 +1,514 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>小艾艾的工具箱</title>
+<style>
+:root{
+  --pri:#e91e8c; --pri2:#f062ae; --priL:#ffd7ec; --onPri:#fff;
+  --bg:#faf0f5; --surf:#fffafc; --surf2:#fdf2f8;
+  --tx:#2b1a24; --tx2:#5d4453; --tx3:#a08896;
+  --okc:#2e7d4f; --okL:#d4f2df; --err:#c62828; --errL:#ffdad6;
+  --warn:#e65100; --warnL:#ffe8cc;
+  --r:24px; --r2:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:'Roboto','Noto Sans SC','MiSans','HarmonyOS Sans SC',sans-serif;
+  background:#3a2530;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px 0;
+}
+.phone{
+  width:100%;max-width:430px;height:min(880px,94vh);background:var(--bg);border-radius:36px;
+  overflow:hidden;display:flex;flex-direction:column;position:relative;
+  box-shadow:0 24px 80px rgba(0,0,0,.55),0 0 0 10px #1a1014,0 0 0 12px #4a303c;
+}
+.statusbar{height:34px;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:12.5px;font-weight:600;color:var(--tx);flex:none}
+.statusbar .right{display:flex;gap:5px;align-items:center}
+.pill{width:66px;height:15px;background:#111;border-radius:10px}
+.appbar{flex:none;padding:6px 16px 12px;display:flex;align-items:center;gap:12px}
+.avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#f062ae,#ffb3d9);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:17px;box-shadow:0 2px 8px rgba(233,30,140,.35)}
+.appbar h1{font-size:19px;font-weight:700;color:var(--tx)}
+.appbar small{display:block;font-size:11.5px;color:var(--tx3);font-weight:400}
+.content{flex:1;overflow-y:auto;padding:4px 16px 110px;scrollbar-width:none}
+.content::-webkit-scrollbar{display:none}
+.card{background:var(--surf);border-radius:var(--r);padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:14px}
+/* 首页空间环 */
+.hero{text-align:center;padding:22px 18px 18px}
+.ring{width:150px;height:150px;margin:0 auto 10px;position:relative}
+.ring svg{transform:rotate(-90deg)}
+.ring .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .val b{font-size:26px;color:var(--pri)}
+.ring .val span{font-size:11px;color:var(--tx3)}
+.hero .msg{font-size:13.5px;color:var(--tx2);line-height:1.7}
+/* 分类卡 */
+.cat{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:var(--r2);background:var(--surf2);margin-bottom:9px;cursor:pointer;transition:transform .1s;user-select:none}
+.cat:active{transform:scale(.98)}
+.cat .ico{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:21px;flex:none;background:var(--priL)}
+.cat .mid{flex:1;min-width:0}
+.cat .mid b{font-size:14px;color:var(--tx);display:block}
+.cat .mid small{font-size:11px;color:var(--tx3);display:block;margin-top:2px;line-height:1.4}
+.cat .size{font-size:14px;font-weight:800;color:var(--pri);flex:none}
+.cat .chk{width:24px;height:24px;border-radius:50%;border:2px solid #e3c8d6;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;transition:.15s}
+.cat.on .chk{background:var(--pri);border-color:var(--pri)}
+.cat.on .chk::after{content:"✓"}
+.cat.dis{opacity:.5;pointer-events:none}
+/* 按钮 */
+.bigbtn{
+  width:100%;height:54px;border:none;border-radius:27px;cursor:pointer;
+  background:linear-gradient(135deg,#f062ae,#e91e8c);color:var(--onPri);font-size:16px;font-weight:800;letter-spacing:2px;
+  display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;
+  box-shadow:0 4px 16px rgba(233,30,140,.4);transition:transform .12s;
+}
+.bigbtn:active{transform:scale(.97)}
+.bigbtn:disabled{opacity:.5;box-shadow:none}
+.bigbtn.green{background:linear-gradient(135deg,#66bb6a,#2e9e5b);box-shadow:0 4px 16px rgba(46,158,91,.35)}
+/* 搬家 */
+.approw{display:flex;align-items:center;gap:11px;padding:12px 13px;border-radius:var(--r2);background:var(--surf2);margin-bottom:9px}
+.approw .ico{width:38px;height:38px;border-radius:12px;background:#f3d9ff;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
+.approw .mid{flex:1;min-width:0}
+.approw .mid b{font-size:13.5px;color:var(--tx);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.approw .mid small{font-size:10.5px;color:var(--tx3);display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.approw .size{font-size:12.5px;font-weight:800;color:var(--pri);flex:none}
+.approw .mvbtn{border:none;border-radius:16px;background:var(--pri);color:#fff;font-size:11.5px;font-weight:700;padding:7px 13px;cursor:pointer;flex:none}
+.approw .mvbtn:disabled{opacity:.4}
+.mvdlg{position:absolute;inset:0;background:rgba(40,10,25,.5);z-index:20;display:none;align-items:flex-end}
+.mvdlg.show{display:flex}
+.sheet{background:var(--surf);border-radius:28px 28px 0 0;padding:22px 20px 30px;width:100%;animation:up .25s ease}
+@keyframes up{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}
+.sheet h3{font-size:16px;color:var(--tx);margin-bottom:6px}
+.sheet .desc{font-size:12px;color:var(--tx2);line-height:1.7;background:var(--warnL);border-radius:12px;padding:10px 12px;margin:10px 0}
+.driveopt{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border:1.5px solid #ecd2de;border-radius:14px;margin-bottom:9px;cursor:pointer}
+.driveopt.on{border-color:var(--pri);background:#fff0f7}
+.driveopt b{font-size:14px;color:var(--tx)}
+.driveopt small{font-size:11px;color:var(--tx3)}
+.bar{height:7px;border-radius:4px;background:#f2dbe6;overflow:hidden;margin-top:9px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#f062ae,#e91e8c);border-radius:4px;transition:width .4s}
+.mvlog{font-size:11px;color:var(--tx3);margin-top:8px;line-height:1.6;max-height:70px;overflow-y:auto}
+/* tab */
+.tabbar{position:absolute;bottom:0;left:0;right:0;height:74px;background:var(--surf);border-top:1px solid #f3dce8;display:flex;flex:none;z-index:5}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10.5px;color:var(--tx3);font-weight:700;cursor:pointer}
+.tab.on{color:var(--pri)}
+.tab .ic{font-size:20px}
+.page{display:none}
+.page.on{display:block}
+.snack{position:absolute;left:50%;bottom:88px;transform:translateX(-50%) translateY(80px);background:#3d2833;color:#fff;font-size:13px;padding:12px 22px;border-radius:28px;opacity:0;transition:.3s;white-space:nowrap;max-width:88%;overflow:hidden;text-overflow:ellipsis;z-index:30;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.snack.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.empty{text-align:center;color:var(--tx3);font-size:12.5px;padding:34px 0;line-height:2}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;display:inline-block;animation:sp .8s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.celebr{font-size:15px;color:var(--pri);font-weight:800;text-align:center;margin:6px 0 2px}
+/* ---------- 电脑大屏适配 ---------- */
+@media (min-width:760px){
+  body{padding:0;background:var(--bg)}
+  .phone{max-width:none;width:100vw;height:100vh;border-radius:0;box-shadow:none}
+  .content{max-width:820px;margin:0 auto;width:100%;padding-bottom:120px}
+  .appbar{max-width:820px;margin:0 auto;width:100%}
+  #cats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #cats .cat{margin-bottom:0}
+  #applist .approw,#startups .approw,#bigfiles .approw,#joblist .approw{max-width:none}
+  .tabbar{max-width:820px;width:820px;left:50%;transform:translateX(-50%);right:auto}
+  .bigbtn{max-width:820px}
+}
+</style></head>
+<body>
+<div class="phone">
+  <div class="statusbar">
+    <span id="clock">10:00</span>
+    <div class="right">
+      <svg width="15" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M2 22h20V2z"/></svg>
+      <svg width="14" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21l9-9-9-9-9 9z"/></svg>
+      <svg width="16" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M2 16h3v6H2zm5-5h3v11H7zm5-5h3v16h-3zm5-5h3v21h-3z" transform="translate(0,-1)"/></svg>
+      <div class="pill"></div>
+    </div>
+  </div>
+  <div class="appbar">
+    <div class="avatar">爱</div>
+    <div><h1>小艾艾的工具箱</h1><small>专属于小艾艾 · 电脑的事，有我呢 ♡</small></div>
+  </div>
+
+  <div class="content">
+    <!-- 页1：清理 -->
+    <div class="page on" id="page-clean">
+      <div class="card hero">
+        <div class="ring">
+          <svg width="150" height="150">
+            <circle cx="75" cy="75" r="64" fill="none" stroke="#f6dce9" stroke-width="13"/>
+            <circle id="ringbar" cx="75" cy="75" r="64" fill="none" stroke="#e91e8c" stroke-width="13" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/>
+          </svg>
+          <div class="val"><b id="junksize">--</b><span id="ringlabel">C盘剩余空间</span></div>
+        </div>
+        <div class="msg" id="heromsg">点击下方「开始体检」，<br>小艾艾帮你看看垃圾藏在哪里～</div>
+      </div>
+      <div id="cats"></div>
+      <button class="bigbtn" id="btnScan" onclick="doScan()">🧹 开始体检</button>
+      <button class="bigbtn green" id="btnClean" onclick="doClean()" style="display:none">✨ 一键清理</button>
+      <div class="celebr" id="celebr"></div>
+    </div>
+
+    <!-- 页2：提速 -->
+    <div class="page" id="page-speed">
+      <div class="card" style="padding:15px">
+        <div style="font-size:13.5px;font-weight:700;color:var(--tx2);line-height:1.7">
+          ⚡ 电脑卡、开机慢？多半是<b>开机自启的软件太多</b>，<br>它们在后台偷偷占内存~
+        </div>
+        <button class="bigbtn" id="btnStartups" style="margin-top:10px;height:46px" onclick="loadStartups()">🔍 查看开机自启的软件</button>
+        <div id="startups" style="margin-top:4px"></div>
+      </div>
+      <div class="card" style="padding:15px">
+        <div style="font-size:13.5px;font-weight:700;color:var(--tx2);line-height:1.7">
+          🕵️ 大文件猎人：找出C盘里藏着的大文件<br>（电影、旧安装包、压缩包），删掉立刻省出好几个G
+        </div>
+        <button class="bigbtn" id="btnBig" style="margin-top:10px;height:46px" onclick="startBig()">🔍 扫描C盘大文件</button>
+        <div id="bigfiles" style="margin-top:4px"></div>
+      </div>
+    </div>
+
+    <!-- 页3：软件搬家 -->
+    <div class="page" id="page-apps">
+      <div class="card" style="padding:15px">
+        <div style="font-size:13.5px;font-weight:700;color:var(--tx2);line-height:1.7">
+          📦 把不常用的软件从 <b>C盘</b> 搬到更大的硬盘，<br>C盘空间立刻变大，软件还能正常用！
+        </div>
+        <div style="font-size:11px;color:var(--warn);margin-top:8px;line-height:1.6">⚠️ 搬家前请先关掉要搬的软件哦～</div>
+        <button class="bigbtn" id="btnApps" style="margin-top:10px;height:46px" onclick="loadApps()">🔍 扫描C盘里的软件</button>
+      </div>
+      <div id="applist"></div>
+    </div>
+
+    <!-- 页4：视频下载 -->
+    <div class="page" id="page-video">
+      <div class="card" style="padding:15px">
+        <div style="font-size:13.5px;font-weight:700;color:var(--tx2);line-height:1.7">
+          🎬 在抖音/快手/B站看到喜欢的视频，<br>点「复制链接」发给我，帮你存到电脑里～
+        </div>
+        <textarea id="vtext" placeholder="把分享口令整个粘贴进来就行，比如：&#10;8.74 复制打开抖音... https://v.douyin.com/xxxx/ ..."
+          style="width:100%;height:74px;border:1.5px solid #ecd2de;border-radius:14px;padding:10px 12px;font-size:12.5px;margin-top:10px;resize:none;outline:none;font-family:inherit;background:var(--surf2);color:var(--tx)"></textarea>
+        <button class="bigbtn" id="btnVdl" style="margin-top:10px;height:46px" onclick="submitJob()">⬇️ 开始下载视频</button>
+        <div style="font-size:10.5px;color:var(--tx3);margin-top:8px;text-align:center">保存位置：下载文件夹\小艾艾下载的视频</div>
+      </div>
+      <div id="joblist"></div>
+    </div>
+
+    <!-- 页5：关于 -->
+    <div class="page" id="page-about">
+      <div class="card" style="padding:22px 20px;text-align:center">
+        <div style="font-size:34px;margin-bottom:6px">💗</div>
+        <div style="font-size:16px;font-weight:800;color:var(--pri);margin-bottom:12px">小艾艾的专属工具箱</div>
+        <div style="font-size:12.5px;color:var(--tx2);line-height:2.1;text-align:left">
+          亲爱的小艾艾：<br>
+          电脑卡了别着急，点「提速」就好；<br>
+          C盘满了别心疼，垃圾清一清、软件搬一搬，空间总会有的；<br>
+          看到喜欢的视频，交给我，帮你稳稳地存下来。<br><br>
+          电脑的事，有我呢。<br>
+          你只管开心，剩下的交给我们。<br><br>
+          <span style="color:var(--pri);font-weight:700">♡ 想要什么新功能，或者遇到任何问题，直接联系你老公就行，他一直在。 ♡</span>
+        </div>
+        <div style="font-size:11px;color:var(--tx3);margin-top:14px">—— 一个为你做的工具箱 ——</div>
+        <div id="updbox" style="margin-top:14px;padding-top:12px;border-top:1px solid #f3dce8">
+          <div style="font-size:11px;color:var(--tx3)">当前版本 <b id="vnow">1.1.0</b></div>
+          <button class="bigbtn" id="btnUpd" style="height:42px;font-size:13.5px;letter-spacing:1px;margin-top:8px" onclick="checkUpdate()">🔄 检查更新</button>
+          <div id="updmsg" style="font-size:11.5px;color:var(--tx2);margin-top:8px;line-height:1.8"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="snack" id="snack"></div>
+
+  <div class="mvdlg" id="dlg">
+    <div class="sheet">
+      <h3 id="dlgTitle">搬家</h3>
+      <div class="desc">搬走后原位置会留一个"传送门"，软件照常打开、照常更新，<b>不影响使用</b>。搬家过程中请不要动电脑、不要打开这个软件。</div>
+      <div id="drives"></div>
+      <button class="bigbtn" id="btnMove" onclick="confirmMove()">🚚 开始搬家</button>
+      <button class="bigbtn" style="background:#eee;color:#777;box-shadow:none;height:44px;font-size:13px" onclick="closeDlg()">先不搬了</button>
+      <div class="mvlog" id="mvlog"></div>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab on" data-p="clean" onclick="switchTab('clean')"><div class="ic">🧹</div>清理</div>
+    <div class="tab" data-p="speed" onclick="switchTab('speed')"><div class="ic">⚡</div>提速</div>
+    <div class="tab" data-p="apps" onclick="switchTab('apps')"><div class="ic">📦</div>软件搬家</div>
+    <div class="tab" data-p="video" onclick="switchTab('video')"><div class="ic">🎬</div>视频</div>
+    <div class="tab" data-p="about" onclick="switchTab('about')"><div class="ic">♡</div>关于</div>
+  </div>
+</div>
+
+<script>
+let cats=[],checked={},apps=[],moveTarget=null,moveName='',pollT=null;
+function snack(m){const s=document.getElementById('snack');s.textContent=m;s.classList.add('show');setTimeout(()=>s.classList.remove('show'),2600);}
+function esc(s){return String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
+function fmt(n){n=Number(n)||0;if(n>=1073741824)return (n/1073741824).toFixed(2)+' GB';if(n>=1048576)return (n/1048576).toFixed(1)+' MB';if(n>=1024)return (n/1024).toFixed(0)+' KB';return n+' B';}
+function switchTab(p){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.p===p));
+  document.querySelectorAll('.page').forEach(pg=>pg.classList.toggle('on',pg.id==='page-'+p));
+}
+function tick(){const d=new Date();document.getElementById('clock').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+setInterval(tick,5000);tick();
+
+/* ---------- 清理 ---------- */
+async function doScan(){
+  const b=document.getElementById('btnScan');b.disabled=true;b.innerHTML='<span class="spin"></span> 正在体检...';
+  document.getElementById('heromsg').innerHTML='正在翻遍电脑找垃圾，<br>文件多的话要等一小会儿～';
+  try{
+    cats=await (await fetch('/api/scan',{method:'POST',body:'{}'})).json();
+    renderCats();
+    document.getElementById('btnClean').style.display='flex';
+    document.getElementById('btnScan').innerHTML='🔄 再体检一次';
+  }catch(e){snack('体检失败，请确认程序正在运行');document.getElementById('heromsg').innerHTML='哎呀出错了，<br>关掉窗口重新打开试试～';}
+  b.disabled=false;
+  if(!pollT)pollT=setInterval(pollMove,800);
+}
+function renderCats(){
+  const el=document.getElementById('cats');let total=0;
+  el.innerHTML=cats.map((c,i)=>{
+    if(!c.cleaned&&c.size>0)total+=c.size;
+    const on=checked[c.id]!==undefined?checked[c.id]:(c.size>0);
+    checked[c.id]=on;
+    return '<div class="cat '+(on?'on':'')+' '+((c.size==0&&!c.cleaned)?'dis':'')+'" onclick="tog(\''+c.id+'\')">'+
+      '<div class="ico">'+c.emoji+'</div>'+
+      '<div class="mid"><b>'+esc(c.name)+'</b><small>'+esc(c.desc)+'</small></div>'+
+      '<div class="size">'+(c.cleaned?'已清':(c.size>0?fmt(c.size):'很干净'))+'</div>'+
+      '<div class="chk"></div></div>';
+  }).join('');
+  updateHero(total);
+}
+function tog(id){checked[id]=!checked[id];renderCats();}
+function updateHero(total){
+  document.getElementById('heromsg').innerHTML=total>0?
+    '找到 <b style="color:var(--pri)">'+fmt(total)+'</b> 可以腾出来的空间！<br>勾选上面想清的部分，点「一键清理」':
+    '电脑很干净哦，几乎没垃圾～<br>保持得真好 ♡';
+}
+/* ---------- C盘健康 ---------- */
+async function loadCDrive(){
+  try{
+    const d=await (await fetch('/api/cdrive')).json();
+    if(!d.total)return;
+    const free=d.free,usedPct=d.used/d.total;
+    document.getElementById('junksize').textContent=fmt(free);
+    const rb=document.getElementById('ringbar');
+    rb.style.strokeDashoffset=402*(1-Math.min(1,usedPct));
+    rb.style.stroke=usedPct>0.9?'#e53935':(usedPct>0.75?'#fb8c00':'#e91e8c');
+    let advice;
+    if(usedPct>0.9)advice='<b style="color:var(--err)">C盘快爆满啦！</b>电脑会越用越卡，<br>快去「清理」「软件搬家」「大文件猎人」腾空间';
+    else if(usedPct>0.75)advice='C盘有点挤了，<br>清清垃圾、搬走不用的软件会更流畅';
+    else if(free<20*1073741824)advice='空间还够用，定期来清理一下哦～<br>觉得卡就去「提速」关掉偷偷自启的软件';
+    else advice='C盘很健康！<br>点击下方「开始体检」看看有多少垃圾～';
+    document.getElementById('heromsg').innerHTML=advice;
+  }catch(e){}
+}
+/* ---------- 开机加速 ---------- */
+async function loadStartups(){
+  const b=document.getElementById('btnStartups');b.disabled=true;b.innerHTML='<span class="spin"></span> 查找中...';
+  try{
+    const list=await (await fetch('/api/startups',{method:'POST',body:'{}'})).json();
+    const el=document.getElementById('startups');
+    if(!list.length){el.innerHTML='<div class="empty">没找到开机自启的软件，很干净～</div>';}
+    else{
+      el.innerHTML='<div style="font-size:11px;color:var(--tx3);margin:8px 2px 6px">共 '+list.length+' 个自启项 · 灰色的已禁用 · 只关软件自启，不卸载软件</div>'+
+        list.map(s=>'<div class="approw" style="'+(s.enabled?'':'opacity:.5')+'">'+
+        '<div class="ico">'+(s.enabled?'🟢':'⛔')+'</div>'+
+        '<div class="mid"><b>'+esc(s.name)+'</b><small>'+esc(s.cmd)+'</small></div>'+
+        '<button class="mvbtn" style="background:'+(s.enabled?'#999':'var(--pri)')+'" onclick="togStartup(this,\''+esc(s.name)+'\','+(!s.enabled)+')">'+(s.enabled?'禁用':'恢复')+'</button></div>').join('');
+      snack('找到 '+list.length+' 个开机自启项，留常用的就好');
+    }
+  }catch(e){snack('查找失败，请重试');}
+  b.disabled=false;b.innerHTML='🔍 重新查找';
+}
+async function togStartup(btn,name,enable){
+  btn.disabled=true;btn.innerHTML='...';
+  try{
+    const r=await (await fetch('/api/startup/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,enable:enable})})).json();
+    if(r.ok){snack(enable?'已恢复开机启动':'下次开机它就不会自己跑出来啦');loadStartups();}
+    else{snack(r.err||'设置失败');btn.disabled=false;btn.innerHTML=enable?'恢复':'禁用';}
+  }catch(e){snack('请求失败');btn.disabled=false;}
+}
+/* ---------- 大文件 ---------- */
+let bigT=null;
+async function startBig(){
+  const b=document.getElementById('btnBig');b.disabled=true;b.innerHTML='<span class="spin"></span> 扫描中，大约半分钟...';
+  document.getElementById('bigfiles').innerHTML='';
+  try{
+    await (await fetch('/api/bigfiles',{method:'POST',body:'{}'})).json();
+    if(bigT)clearInterval(bigT);
+    bigT=setInterval(pollBig,1200);
+  }catch(e){snack('扫描启动失败');b.disabled=false;}
+}
+async function pollBig(){
+  try{
+    const st=await (await fetch('/api/bigfiles/status')).json();
+    if(st.active)return;
+    clearInterval(bigT);bigT=null;
+    const b=document.getElementById('btnBig');b.disabled=false;b.innerHTML='🔍 重新扫描';
+    const el=document.getElementById('bigfiles');
+    if(st.err){el.innerHTML='<div class="empty">'+esc(st.err)+'</div>';return;}
+    if(!st.files.length){el.innerHTML='<div class="empty">没找到300MB以上的大文件，很干净～</div>';return;}
+    const total=st.files.reduce((s,f)=>s+f.size,0);
+    el.innerHTML='<div style="font-size:11px;color:var(--tx3);margin:8px 2px 6px">找到 '+st.files.length+' 个大文件，共 <b style="color:var(--pri)">'+fmt(total)+'</b> · 删之前想想还要不要哦</div>'+
+      st.files.map(f=>'<div class="approw"><div class="ico">🎞️</div>'+
+      '<div class="mid"><b>'+esc(f.path.split('\\').pop())+'</b><small>'+esc(f.path)+'</small></div>'+
+      '<div class="size">'+fmt(f.size)+'</div>'+
+      '<button class="mvbtn" style="background:#e53935" onclick="delFile(this,\''+esc(f.path).replace(/'/g,"\\'")+'\')">删除</button></div>').join('');
+  }catch(e){}
+}
+async function delFile(btn,path){
+  btn.disabled=true;btn.innerHTML='...';
+  try{
+    const r=await (await fetch('/api/delfile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:path})})).json();
+    if(r.ok){snack('删掉啦，C盘又轻了一点 ♡');btn.closest('.approw').remove();}
+    else{snack(r.err||'删除失败');btn.disabled=false;btn.innerHTML='删除';}
+  }catch(e){snack('请求失败');btn.disabled=false;}
+}
+/* ---------- 视频下载 ---------- */
+let jobT=null;
+async function submitJob(){
+  const ta=document.getElementById('vtext');
+  if(!ta.value.trim()){snack('先把分享口令粘贴进来哦');return;}
+  const b=document.getElementById('btnVdl');b.disabled=true;b.innerHTML='<span class="spin"></span> 提交中...';
+  try{
+    const r=await (await fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:ta.value})})).json();
+    if(r.ok){ta.value='';snack('开始解析啦，视频大的话要等一会儿～');if(!jobT)jobT=setInterval(pollJobs,1000);}
+    else snack(r.err||'提交失败');
+  }catch(e){snack('提交失败，请重试');}
+  b.disabled=false;b.innerHTML='⬇️ 开始下载视频';
+}
+async function pollJobs(){
+  try{
+    const jobs=await (await fetch('/api/jobs')).json();
+    const el=document.getElementById('joblist');
+    if(!jobs.length){el.innerHTML='';if(jobT){clearInterval(jobT);jobT=null;}return;}
+    el.innerHTML='<div class="sec" style="font-size:13px;font-weight:700;color:var(--tx2);margin:14px 4px 10px">下载任务</div>'+
+      jobs.map(j=>{
+        let prog='';
+        if(j.status==='downloading'&&j.total>0){
+          const p=Math.min(100,Math.round(j.received/j.total*100));
+          prog='<div class="bar"><i style="width:'+p+'%"></i></div><div style="font-size:10.5px;color:var(--tx3);margin-top:4px">'+p+'% · '+fmt(j.received)+' / '+fmt(j.total)+'</div>';
+        }
+        let badge='';
+        if(j.status==='done')badge='<span style="color:var(--okc);font-weight:700">✓ 已保存</span>';
+        else if(j.status==='error')badge='<span style="color:var(--err);font-weight:700">✕ 失败</span>';
+        return '<div class="approw" style="align-items:flex-start">'+
+          '<div class="ico">'+(j.status==='done'?'✅':(j.status==='error'?'❌':'⏳'))+'</div>'+
+          '<div class="mid"><b>'+esc(j.title||'解析中...')+'</b>'+
+          '<small>'+(j.status==='done'?esc(j.file):(j.status==='error'?esc(j.err):esc(j.step||'处理中')))+'</small>'+prog+'</div>'+
+          '<div style="flex:none;text-align:right">'+badge+
+          '<div><button class="mvbtn" style="background:#eee;color:#888;margin-top:6px" onclick="delJob(\''+j.id+'\')">清除</button></div></div></div>';
+      }).join('');
+  }catch(e){}
+}
+async function delJob(id){
+  try{await fetch('/api/jobs/'+id,{method:'DELETE'});}catch(e){}
+  pollJobs();
+}
+pollJobs();if(!jobT)setTimeout(()=>{if(document.getElementById('joblist').innerHTML==='')pollJobs();},500);
+loadCDrive();
+/* ---------- 云端更新 ---------- */
+async function checkUpdate(){
+  const b=document.getElementById('btnUpd');b.disabled=true;b.innerHTML='<span class="spin"></span> 检查中...';
+  const m=document.getElementById('updmsg');
+  m.textContent='';
+  try{
+    const r=await (await fetch('/api/update/check')).json();
+    if(!r.ok){m.innerHTML=esc(r.err||'检查失败');}
+    else if(!r.hasUpdate){m.innerHTML='✓ 已经是最新版本啦';}
+    else{
+      m.innerHTML='🎉 发现新版本 <b style="color:var(--pri)">v'+esc(r.version)+'</b>'+(r.notes?'<br>'+esc(r.notes):'');
+      b.innerHTML='⬆️ 一键更新到 v'+esc(r.version);
+      b.onclick=applyUpdate;
+    }
+  }catch(e){m.innerHTML='检查失败，请稍后再试';}
+  b.disabled=false;
+}
+async function applyUpdate(){
+  const b=document.getElementById('btnUpd');b.disabled=true;b.innerHTML='<span class="spin"></span> 下载更新中，请稍等...';
+  const m=document.getElementById('updmsg');
+  try{
+    const r=await (await fetch('/api/update/apply',{method:'POST',body:'{}'})).json();
+    if(r.ok){
+      m.innerHTML='✓ 更新包已就位，正在重启小艾艾...<br>界面马上会刷新，如果没反应请关掉重新打开';
+      setTimeout(()=>{fetch('/api/quit',{method:'GET'}).catch(()=>{});location.reload();},2500);
+    } else {m.innerHTML=esc(r.err||'更新失败');b.disabled=false;b.innerHTML='🔄 重试更新';}
+  }catch(e){m.innerHTML='更新请求失败';b.disabled=false;}
+}
+async function doClean(){
+  const ids=cats.filter(c=>checked[c.id]&&c.size>0).map(c=>c.id);
+  if(!ids.length){snack('先勾选要清理的项目哦');return;}
+  const b=document.getElementById('btnClean');b.disabled=true;b.innerHTML='<span class="spin"></span> 清理中，别关窗口...';
+  try{
+    const r=await (await fetch('/api/clean',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})})).json();
+    if(r.ok){
+      const freed=r.freed||0;
+      document.getElementById('celebr').textContent='🎉 清理完成，电脑轻了 '+fmt(freed)+'！';
+      snack('清理完成 ♡');
+      await doScanRescan();
+    } else snack(r.err||'清理出错了');
+  }catch(e){snack('清理失败，请重试');}
+  b.disabled=false;b.innerHTML='✨ 一键清理';
+}
+async function doScanRescan(){
+  try{cats=await (await fetch('/api/scan',{method:'POST',body:'{}'})).json();
+    cats.forEach(c=>{c.cleaned=(checked[c.id]&&c.size==0);});renderCats();}catch(e){}
+}
+
+/* ---------- 软件搬家 ---------- */
+async function loadApps(){
+  const b=document.getElementById('btnApps');b.disabled=true;b.innerHTML='<span class="spin"></span> 扫描中，可能要半分钟...';
+  try{
+    apps=await (await fetch('/api/apps',{method:'POST',body:'{}'})).json();
+    renderApps();
+    if(!apps.length)snack('C盘里没找到可搬的软件');
+  }catch(e){snack('扫描失败，请重试');}
+  b.disabled=false;b.innerHTML='🔍 重新扫描';
+}
+function renderApps(){
+  const el=document.getElementById('applist');
+  if(!apps.length){el.innerHTML='<div class="empty">C盘里没有找到装在本地的大软件<br>（绿色软件和系统组件不支持搬家）</div>';return;}
+  el.innerHTML='<div class="sec" style="font-size:13px;font-weight:700;color:var(--tx2);margin:14px 4px 10px">占空间超过 200MB 的软件（点击"搬家"）</div>'+
+    apps.map(a=>'<div class="approw"><div class="ico">📦</div>'+
+    '<div class="mid"><b>'+esc(a.name)+'</b><small>'+esc(a.loc)+'</small></div>'+
+    '<div class="size">'+fmt(a.size)+'</div>'+
+    '<button class="mvbtn" onclick="openDlg(\''+esc(a.key)+'\')">搬家</button></div>').join('');
+}
+async function openDlg(key){
+  moveName=key;
+  const a=apps.find(x=>x.key===key);if(!a)return;
+  document.getElementById('dlgTitle').textContent='📦 把「'+a.name+'」搬到哪？';
+  document.getElementById('mvlog').textContent='';
+  document.getElementById('btnMove').disabled=false;document.getElementById('btnMove').innerHTML='🚚 开始搬家';
+  let drives=[];
+  try{drives=await (await fetch('/api/drives')).json();}catch(e){}
+  document.getElementById('drives').innerHTML=drives.length?drives.map((d,i)=>
+    '<div class="driveopt '+(i==0?'on':'')+'" onclick="pickDrive(this)" data-d="'+esc(d.letter)+'"><b>'+esc(d.letter)+' 盘</b><small>剩余 '+fmt(d.free)+'</small></div>').join('')
+    :'<div class="empty">没有找到其他硬盘哦</div>';
+  moveTarget=drives.length?drives[0].letter:null;
+  document.getElementById('dlg').classList.add('show');
+}
+function pickDrive(el){document.querySelectorAll('.driveopt').forEach(x=>x.classList.remove('on'));el.classList.add('on');moveTarget=el.dataset.d;}
+function closeDlg(){document.getElementById('dlg').classList.remove('show');}
+async function confirmMove(){
+  if(!moveTarget){snack('没有可选的硬盘');return;}
+  const b=document.getElementById('btnMove');b.disabled=true;b.innerHTML='<span class="spin"></span> 搬家中，请勿关机...';
+  document.getElementById('mvlog').textContent='正在搬家，软件大的话可能要几分钟...';
+  try{
+    const r=await (await fetch('/api/move',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:moveName,target:moveTarget})})).json();
+    if(r.ok){
+      document.getElementById('mvlog').textContent=r.log||'搬家完成！';
+      if(r.done){snack('搬家成功 🎉');document.getElementById('btnMove').innerHTML='✓ 搬好了';await loadApps();}
+      else{document.getElementById('btnMove').innerHTML=r.err?'✕ 失败':'…';if(r.err)snack(r.err);}
+    } else {snack(r.err||'搬家失败');document.getElementById('btnMove').disabled=false;document.getElementById('btnMove').innerHTML='🚚 重新搬家';}
+  }catch(e){snack('搬家请求失败');b.disabled=false;}
+}
+async function pollMove(){
+  try{
+    const st=await (await fetch('/api/move/status')).json();
+    if(st.active){
+      document.getElementById('mvlog').textContent=st.step||'';
+      document.getElementById('btnMove').innerHTML='<span class="spin"></span> '+esc(st.step||'搬家中...');
+    }
+  }catch(e){}
+}
+if(!pollT)pollT=setInterval(pollMove,800);
+</script>
+</body></html>
