@@ -1,5 +1,5 @@
 {
-  "version": "1.1.5",
+  "version": "1.1.6",
   "zip": "https://raw.githubusercontent.com/Swenhai/xiaai-toolbox/main/%E5%B0%8F%E8%89%BE%E8%89%BE%E5%B7%A5%E5%85%B7%E7%AE%B1%E6%9B%B4%E6%96%B0%E5%8C%85.zip",
-  "notes": "桌面宠物可以换装啦！六个Q版小人等你选，点宠物菜单里的头像就能换，选好的会记住哦～"
+  "notes": "修复了一键更新时会显示「无法访问此页面」的问题：现在更新后会耐心等新版本就绪再进来，还会显示可爱的等待提示～"
 }

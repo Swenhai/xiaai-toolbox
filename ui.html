@@ -679,6 +679,21 @@ async function updatePoller(){
 }
 setInterval(updatePoller,10*60*1000);
 function closeUpd(){document.getElementById('updlg').classList.remove('show');}
+async function waitRestart(el){
+  el.innerHTML='✓ 更新包已就位，小艾艾正在换新衣服...<br><span style="font-size:11px">这一小会儿大概 10~30 秒，不用关窗口</span>';
+  fetch('/api/quit',{method:'GET'}).catch(()=>{});
+  for(let i=0;i<80;i++){
+    await new Promise(r=>setTimeout(r,2000));
+    try{const r=await fetch('/api/ping?t='+Date.now(),{cache:'no-store'});
+      const p=await r.json().catch(()=>null);
+      if(p&&p.ok){el.innerHTML='✓ 更新完成，马上进来～';setTimeout(()=>location.replace(location.origin+'/'),800);return;}
+    }catch(e){}
+    if(i===3)el.innerHTML+=''; 
+    if(i%5===4)el.innerHTML='小艾艾正在换新衣服... ('+((i+1)*2)+'秒)<br><span style="font-size:11px">不用关窗口，马上就好</span>';
+  }
+  el.innerHTML='更新花了点时间，点 <b style="cursor:pointer;color:var(--pri)" onclick="location.reload()">刷新</b> 再试试；不行就关掉窗口重新打开。';
+}
+
 async function doUpdateNow(){
   const b=document.getElementById('btnUpdNow');b.disabled=true;b.innerHTML='<span class="spin"></span> 下载更新中，请稍等...';
   const lg=document.getElementById('updlog');
@@ -686,8 +701,7 @@ async function doUpdateNow(){
   try{
     const r=await (await fetch('/api/update/apply',{method:'POST',body:'{}'})).json();
     if(r.ok){
-      lg.innerHTML='✓ 更新包已就位，正在重启小艾艾...<br>界面马上会刷新';
-      setTimeout(()=>{fetch('/api/quit',{method:'GET'}).catch(()=>{});location.reload();},2500);
+      await waitRestart(lg);
     } else {
       lg.innerHTML='❌ '+esc(r.err||'更新失败，稍后再试');
       b.disabled=false;b.innerHTML='⬆️ 重试更新';
@@ -718,8 +732,7 @@ async function applyUpdate(){
   try{
     const r=await (await fetch('/api/update/apply',{method:'POST',body:'{}'})).json();
     if(r.ok){
-      m.innerHTML='✓ 更新包已就位，正在重启小艾艾...<br>界面马上会刷新，如果没反应请关掉重新打开';
-      setTimeout(()=>{fetch('/api/quit',{method:'GET'}).catch(()=>{});location.reload();},2500);
+      await waitRestart(m);
     } else {m.innerHTML=esc(r.err||'更新失败');b.disabled=false;b.innerHTML='🔄 重试更新';}
   }catch(e){m.innerHTML='更新请求失败';b.disabled=false;}
 }
