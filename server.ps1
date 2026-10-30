@@ -14,7 +14,7 @@ $script:Moves = [hashtable]::Synchronized(@{})   # key -> @{Step; Done; Err; Log
 $script:BigScan = $null
 
 # ---------------- 云端更新 ----------------
-$script:VERSION = "1.1.2"
+$script:VERSION = "1.1.3"
 $script:GH_BASE = "Swenhai/xiaai-toolbox"
 # 多源：jsDelivr（国内可达）优先，GitHub raw 备用
 $script:UPDATE_SOURCES = @(
@@ -705,6 +705,93 @@ function Start-VJobTask([string]$jobId) {
     $script:VRunning[$jobId] = @{ PS = $ps; Handle = $handle }
 }
 
+# ---------------- 安装包清理（孤儿 .msi/.msp） ----------------
+$script:MsiScan = $null
+
+function Start-MsiScan {
+    $prev = $script:MsiScan
+    if ($prev -and -not $prev.Done -and -not $prev.Err) { return }
+    $script:MsiScan = [hashtable]::Synchronized(@{ Step = "正在清点C盘的安装包仓库..."; Done = $false; Err = ""; Total = [int64]0; Count = 0 })
+    $ps = [powershell]::Create()
+    $null = $ps.AddScript({
+        param($State)
+        try {
+            # 1) 收集所有「在用」的安装包文件名
+            $used = @{}
+            try {
+                $wi = New-Object -ComObject WindowsInstaller.Installer
+                foreach ($p in @($wi.Products)) {
+                    try { $lp = $wi.ProductInfo($p, "LocalPackage"); if ($lp) { $used[(Split-Path $lp -Leaf).ToLower()] = 1 } } catch {}
+                }
+                foreach ($pt in @($wi.Patches)) {
+                    try { $lp = $wi.PatchInfo($pt, "LocalPackage"); if ($lp) { $used[(Split-Path $lp -Leaf).ToLower()] = 1 } } catch {}
+                }
+                foreach ($u in @($wi.UserInfo)) {
+                    try {
+                        foreach ($p in @($wi.ProductsForUser($u, ""))) {
+                            try { $lp = $wi.ProductInfoForUser($u, "", $p, "LocalPackage"); if ($lp) { $used[(Split-Path $lp -Leaf).ToLower()] = 1 } } catch {}
+                        }
+                    } catch {}
+                }
+            } catch {}
+            # 2) 注册表里登记过的 LocalPackage 也算在用（双保险）
+            foreach ($rk in @(
+                "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Products",
+                "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Patches")) {
+                if (Test-Path $rk) {
+                    Get-ChildItem $rk -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+                        try {
+                            $v = (Get-ItemProperty $_.PSPath -ErrorAction Stop).LocalPackage
+                            if ($v) { $used[(Split-Path $v -Leaf).ToLower()] = 1 }
+                        } catch {}
+                    }
+                }
+            }
+            # 3) 对比 C:\Windows\Installer，找出没人引用的
+            $dir = "C:\Windows\Installer"
+            if (-not (Test-Path $dir)) { $State.Err = "这台电脑没有 C:\Windows\Installer 目录"; $State.Done = $true; return }
+            $total = [int64]0; $count = 0
+            foreach ($f in (Get-ChildItem -LiteralPath $dir -File -ErrorAction SilentlyContinue)) {
+                if ($f.Extension -notin @(".msi", ".msp")) { continue }
+                if ($used.ContainsKey($f.Name.ToLower())) { continue }
+                $total += $f.Length; $count++
+                $State.Step = "已找到 $count 个没用的安装包..."
+            }
+            $State.Total = $total; $State.Count = $count
+            $State.Step = "扫描完成"
+            $State.Done = $true
+        } catch {
+            $State.Err = "扫描出错: " + $_.Exception.Message
+            $State.Done = $true
+        }
+    }).AddArgument($script:MsiScan) | Out-Null
+    $ps.BeginInvoke() | Out-Null
+}
+
+function Invoke-MsiClean {
+    # 复用扫描结果，删除所有孤儿 .msi/.msp，返回释放字节数
+    $st = $script:MsiScan
+    if (-not $st -or -not $st.Done -or $st.Err) { return [int64]0 }
+    $dir = "C:\Windows\Installer"
+    $freed = [int64]0
+    try {
+        $wi = New-Object -ComObject WindowsInstaller.Installer
+        $used = @{}
+        foreach ($p in @($wi.Products)) { try { $lp = $wi.ProductInfo($p, "LocalPackage"); if ($lp) { $used[(Split-Path $lp -Leaf).ToLower()] = 1 } } catch {} }
+        foreach ($pt in @($wi.Patches)) { try { $lp = $wi.PatchInfo($pt, "LocalPackage"); if ($lp) { $used[(Split-Path $lp -Leaf).ToLower()] = 1 } } catch {} }
+        foreach ($f in (Get-ChildItem -LiteralPath $dir -File -ErrorAction SilentlyContinue)) {
+            if ($f.Extension -notin @(".msi", ".msp")) { continue }
+            if ($used.ContainsKey($f.Name.ToLower())) { continue }
+            try {
+                $sz = $f.Length
+                Remove-Item -LiteralPath $f.FullName -Force -ErrorAction Stop
+                $freed += $sz
+            } catch {}
+        }
+    } catch {}
+    return $freed
+}
+
 # ---------------- HTTP 服务 ----------------
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://127.0.0.1:$Port/")
@@ -872,6 +959,19 @@ while ($listener.IsListening) {
             $err = Invoke-UpdateApply
             if ($err) { Send-Json $ctx ([ordered]@{ ok = $false; err = $err }) }
             else { Send-Json $ctx ([ordered]@{ ok = $true }) }
+        }
+        elseif ($path -eq "/api/msi/scan" -and $req.HttpMethod -eq "POST") {
+            Start-MsiScan
+            Send-Json $ctx ([ordered]@{ ok = $true })
+        }
+        elseif ($path -eq "/api/msi/status" -and $req.HttpMethod -eq "GET") {
+            $m = $script:MsiScan
+            if (-not $m) { Send-Json $ctx ([ordered]@{ active = $false; done = $false; total = 0; count = 0 }) }
+            else { Send-Json $ctx ([ordered]@{ active = (-not $m.Done -and -not $m.Err); done = $m.Done; err = $m.Err; total = $m.Total; count = $m.Count; step = $m.Step }) }
+        }
+        elseif ($path -eq "/api/msi/clean" -and $req.HttpMethod -eq "POST") {
+            $freed = Invoke-MsiClean
+            Send-Json $ctx ([ordered]@{ ok = $true; freed = $freed })
         }
         elseif ($path -eq "/api/quit") {
             Send-Json $ctx ([ordered]@{ ok = $true })

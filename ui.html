@@ -93,6 +93,17 @@ body{
 .upcard h3{font-size:16.5px;color:var(--tx);margin:6px 0 4px}
 .upcard .cur{font-size:11px;color:var(--tx3)}
 .upcard .notes{font-size:12.5px;color:var(--tx2);text-align:left;background:var(--surf2);border-radius:12px;padding:12px 14px;margin:12px 0;line-height:2}
+/* 安卓主页宫格 */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:6px 2px 2px}
+.appic{background:var(--surf);border-radius:22px;padding:16px 8px 12px;text-align:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:transform .12s;position:relative}
+.appic:active{transform:scale(.94)}
+.appic .bub{width:56px;height:56px;margin:0 auto 8px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 3px 10px rgba(233,30,140,.18)}
+.appic b{font-size:12.5px;color:var(--tx);display:block}
+.appic small{font-size:9.5px;color:var(--tx3);display:block;margin-top:2px}
+.appic .dot{position:absolute;top:10px;right:10px;font-size:8px}
+.backbar{display:flex;align-items:center;gap:8px;padding:2px 4px 10px}
+.backbar .bk{width:34px;height:34px;border-radius:12px;background:var(--surf);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);color:var(--tx2)}
+.backbar b{font-size:15px;color:var(--tx)}
 /* tab */
 .tabbar{position:absolute;bottom:0;left:0;right:0;height:74px;background:var(--surf);border-top:1px solid #f3dce8;display:flex;flex:none;z-index:5}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10.5px;color:var(--tx3);font-weight:700;cursor:pointer}
@@ -136,8 +147,26 @@ body{
   </div>
 
   <div class="content">
+    <!-- 主页 -->
+    <div class="page on" id="page-home">
+      <div class="card hero" style="padding:18px 18px 14px">
+        <div style="font-size:17px;font-weight:800;color:var(--tx)">嗨，小艾艾 ♡</div>
+        <div id="homecd" style="font-size:12.5px;color:var(--tx2);margin-top:6px;line-height:1.8">正在查看C盘状况...</div>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:var(--tx2);margin:12px 4px 8px">今天想做点什么？</div>
+      <div class="grid">
+        <div class="appic" onclick="openApp('clean')"><div class="bub" style="background:#ffe3f1">🧹</div><b>垃圾清理</b><small>给C盘瘦身</small></div>
+        <div class="appic" onclick="openApp('speed')"><div class="bub" style="background:#fff3d6">⚡</div><b>提速优化</b><small>开机更快</small></div>
+        <div class="appic" onclick="openApp('apps')"><div class="bub" style="background:#f3d9ff">📦</div><b>软件搬家</b><small>C盘→大硬盘</small></div>
+        <div class="appic" onclick="openApp('video')"><div class="bub" style="background:#d6f0ff">🎬</div><b>视频下载</b><small>无水印保存</small></div>
+        <div class="appic" onclick="openApp('msi')"><div class="bub" style="background:#d9f2e3">🗑️</div><b>安装包清理</b><small>清理隐藏大垃圾</small><span class="dot" style="display:none">🔴</span></div>
+        <div class="appic" onclick="openApp('about')" style="opacity:.85"><div class="bub" style="background:#ffe9e9">💗</div><b>关于</b><small>♡</small></div>
+      </div>
+    </div>
+
     <!-- 页1：清理 -->
-    <div class="page on" id="page-clean">
+    <div class="page" id="page-clean">
+      <div class="backbar"><span class="bk" onclick="goHome()">←</span><b>垃圾清理</b></div>
       <div class="card hero">
         <div class="ring">
           <svg width="150" height="150">
@@ -156,6 +185,7 @@ body{
 
     <!-- 页2：提速 -->
     <div class="page" id="page-speed">
+      <div class="backbar"><span class="bk" onclick="goHome()">←</span><b>提速优化</b></div>
       <div class="card" style="padding:15px">
         <div style="font-size:13.5px;font-weight:700;color:var(--tx2);line-height:1.7">
           ⚡ 电脑卡、开机慢？多半是<b>开机自启的软件太多</b>，<br>它们在后台偷偷占内存~
@@ -174,6 +204,7 @@ body{
 
     <!-- 页3：软件搬家 -->
     <div class="page" id="page-apps">
+      <div class="backbar"><span class="bk" onclick="goHome()">←</span><b>软件搬家</b></div>
       <div class="card" style="padding:15px">
         <div style="font-size:13.5px;font-weight:700;color:var(--tx2);line-height:1.7">
           📦 把不常用的软件从 <b>C盘</b> 搬到更大的硬盘，<br>C盘空间立刻变大，软件还能正常用！
@@ -186,6 +217,7 @@ body{
 
     <!-- 页4：视频下载 -->
     <div class="page" id="page-video">
+      <div class="backbar"><span class="bk" onclick="goHome()">←</span><b>视频下载</b></div>
       <div class="card" style="padding:15px">
         <div style="font-size:13.5px;font-weight:700;color:var(--tx2);line-height:1.7">
           🎬 在抖音/快手/B站看到喜欢的视频，<br>点「复制链接」发给我，帮你存到电脑里～
@@ -198,7 +230,19 @@ body{
       <div id="joblist"></div>
     </div>
 
-    <!-- 页5：关于 -->
+    <!-- 页5：安装包清理 -->
+    <div class="page" id="page-msi">
+      <div class="backbar"><span class="bk" onclick="goHome()">←</span><b>安装包清理</b></div>
+      <div class="card" style="padding:15px">
+        <div style="font-size:13.5px;font-weight:700;color:var(--tx2);line-height:1.7">
+          🗑️ C盘里藏着一个看不见的「安装包仓库」<br><span style="font-size:11.5px;color:var(--tx3);font-weight:400">C:\Windows\Installer 里堆着每次装软件留下的安装包，很多早就没用了，几十GB都常见。这里帮你找出没用的，放心删。</span>
+        </div>
+        <button class="bigbtn" id="btnMsi" style="margin-top:10px;height:46px" onclick="startMsi()">🔍 扫描没用的安装包</button>
+        <div id="msiresult" style="margin-top:4px"></div>
+      </div>
+    </div>
+
+    <!-- 页6：关于 -->
     <div class="page" id="page-about">
       <div class="card" style="padding:22px 20px;text-align:center">
         <div style="font-size:34px;margin-bottom:6px">💗</div>
@@ -248,10 +292,7 @@ body{
   </div>
 
   <div class="tabbar">
-    <div class="tab on" data-p="clean" onclick="switchTab('clean')"><div class="ic">🧹</div>清理</div>
-    <div class="tab" data-p="speed" onclick="switchTab('speed')"><div class="ic">⚡</div>提速</div>
-    <div class="tab" data-p="apps" onclick="switchTab('apps')"><div class="ic">📦</div>软件搬家</div>
-    <div class="tab" data-p="video" onclick="switchTab('video')"><div class="ic">🎬</div>视频</div>
+    <div class="tab on" data-p="home" onclick="switchTab('home')"><div class="ic">🏠</div>主页</div>
     <div class="tab" data-p="about" onclick="switchTab('about')"><div class="ic">♡</div>关于</div>
   </div>
 </div>
@@ -264,7 +305,13 @@ function fmt(n){n=Number(n)||0;if(n>=1073741824)return (n/1073741824).toFixed(2)
 function switchTab(p){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.p===p));
   document.querySelectorAll('.page').forEach(pg=>pg.classList.toggle('on',pg.id==='page-'+p));
+  const bar=document.querySelector('.tabbar');
+  bar.style.display=(p==='home'||p==='about')?'flex':'none';
+  if(p==='home')loadHome();
+  window.scrollTo(0,0);
 }
+function openApp(p){switchTab(p);}
+function goHome(){switchTab('home');}
 function tick(){const d=new Date();document.getElementById('clock').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 setInterval(tick,5000);tick();
 
@@ -423,7 +470,54 @@ async function delJob(id){
   pollJobs();
 }
 pollJobs();if(!jobT)setTimeout(()=>{if(document.getElementById('joblist').innerHTML==='')pollJobs();},500);
-loadCDrive();
+loadCDrive();loadHome();
+/* ---------- 主页C盘状态 ---------- */
+async function loadHome(){
+  try{
+    const d=await (await fetch('/api/cdrive')).json();
+    const el=document.getElementById('homecd');
+    if(!d.total){el.textContent='C盘状况未知，去「清理」页体检一下吧';return;}
+    const usedPct=d.used/d.total, free=d.free;
+    let mood;
+    if(usedPct>0.9)mood='<b style="color:var(--err)">C盘快满啦</b>，先去「垃圾清理」腾点地方吧';
+    else if(usedPct>0.75)mood='C盘有点挤，记得常来清理哦';
+    else mood='C盘状态不错，放心用～';
+    el.innerHTML='C盘剩余 <b style="color:var(--pri)">'+fmt(free)+'</b>（已用 '+Math.round(usedPct*100)+'%）。<br>'+mood;
+  }catch(e){document.getElementById('homecd').textContent='C盘状况未知，去「清理」页体检一下吧';}
+}
+/* ---------- 安装包清理 ---------- */
+let msiT=null;
+async function startMsi(){
+  const b=document.getElementById('btnMsi');b.disabled=true;b.innerHTML='<span class="spin"></span> 扫描中，大约半分钟...';
+  document.getElementById('msiresult').innerHTML='';
+  try{
+    await (await fetch('/api/msi/scan',{method:'POST',body:'{}'})).json();
+    if(msiT)clearInterval(msiT);
+    msiT=setInterval(pollMsi,1500);
+  }catch(e){snack('扫描启动失败');b.disabled=false;}
+}
+async function pollMsi(){
+  try{
+    const st=await (await fetch('/api/msi/status')).json();
+    if(st.active){document.getElementById('msiresult').innerHTML='<div class="empty">'+esc(st.step||'扫描中...')+'</div>';return;}
+    clearInterval(msiT);msiT=null;
+    const b=document.getElementById('btnMsi');b.disabled=false;b.innerHTML='🔍 重新扫描';
+    const el=document.getElementById('msiresult');
+    if(st.err){el.innerHTML='<div class="empty">'+esc(st.err)+'</div>';return;}
+    if(!st.count){el.innerHTML='<div class="empty">没有找到没用的安装包，很干净～</div>';return;}
+    el.innerHTML='<div class="approw" style="background:#fff0f0"><div class="ico">🗑️</div>'+
+      '<div class="mid"><b>找到 '+st.count+' 个没用的安装包</b><small>共 '+fmt(st.total)+' · 删除后软件照常使用</small></div>'+
+      '<button class="mvbtn" style="background:#e53935" onclick="cleanMsi(this)">一键清理</button></div>';
+  }catch(e){}
+}
+async function cleanMsi(btn){
+  btn.disabled=true;btn.innerHTML='...';
+  try{
+    const r=await (await fetch('/api/msi/clean',{method:'POST',body:'{}'})).json();
+    document.getElementById('msiresult').innerHTML='<div class="celebr">🎉 清理完成，C盘轻了 '+fmt(r.freed||0)+'！</div>';
+    snack('安装包清理完成 ♡');
+  }catch(e){snack('清理失败，请重试');btn.disabled=false;btn.innerHTML='一键清理';}
+}
 /* ---------- 启动自动检查更新 ---------- */
 async function autoUpdateCheck(){
   try{
