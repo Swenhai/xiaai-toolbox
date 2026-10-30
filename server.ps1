@@ -15,26 +15,57 @@ $script:BigScan = $null
 
 # ---------------- 云端更新 ----------------
 $script:VERSION = "1.1.0"
-$script:UPDATE_MANIFEST = "https://raw.githubusercontent.com/Swenhai/xiaai-toolbox/main/version.json"
+$script:GH_BASE = "Swenhai/xiaai-toolbox"
+# 多源：jsDelivr（国内可达）优先，GitHub raw 备用
+$script:UPDATE_SOURCES = @(
+    "https://cdn.jsdelivr.net/gh/$($script:GH_BASE)@main/version.json",
+    "https://raw.githubusercontent.com/$($script:GH_BASE)/main/version.json"
+)
+
+function Get-UpdateManifest {
+    foreach ($u in $script:UPDATE_SOURCES) {
+        try {
+            $m = Invoke-RestMethod -Uri $u -TimeoutSec 20
+            if ($m -and $m.version) { return $m }
+        } catch {}
+    }
+    return $null
+}
+
+function Get-UpdateZipUrls([string]$rawUrl) {
+    $urls = @()
+    if ($rawUrl -match '^https://raw\.githubusercontent\.com/([^/]+)/([^/]+)/([^/]+)/(.+)$') {
+        $urls += "https://cdn.jsdelivr.net/gh/$($Matches[1])@$($Matches[3])/$($Matches[4])"
+    }
+    $urls += $rawUrl
+    return $urls
+}
 
 function Invoke-UpdateCheck {
     try {
-        $m = Invoke-RestMethod -Uri $script:UPDATE_MANIFEST -TimeoutSec 15
-        if (-not $m.version) { return [ordered]@{ ok = $false; err = "云端配置无效" } }
+        $m = Get-UpdateManifest
+        if (-not $m) { return [ordered]@{ ok = $false; err = "检查更新失败，网络不通或所有更新源都不可达" } }
         $has = ([version]$m.version) -gt ([version]$script:VERSION)
         return [ordered]@{ ok = $true; current = $script:VERSION; version = $m.version; hasUpdate = $has; notes = $m.notes }
     } catch {
-        return [ordered]@{ ok = $false; err = "检查更新失败，可能网络不通或云端链接过期" }
+        return [ordered]@{ ok = $false; err = "检查更新失败: " + $_.Exception.Message }
     }
 }
 
 function Invoke-UpdateApply {
     try {
-        $m = Invoke-RestMethod -Uri $script:UPDATE_MANIFEST -TimeoutSec 15
+        $m = Get-UpdateManifest
+        if (-not $m) { return "无法获取云端更新信息，请稍后再试" }
         if (-not $m.zip) { return "云端配置缺少下载地址" }
         $zip = Join-Path $RootDir "update_pkg.zip"
-        Invoke-WebRequest -Uri $m.zip -OutFile $zip -TimeoutSec 120 -UseBasicParsing
-        if ((Get-Item $zip).Length -lt 1000) { return "更新包下载不完整" }
+        $downloaded = $false
+        foreach ($u in (Get-UpdateZipUrls $m.zip)) {
+            try {
+                Invoke-WebRequest -Uri $u -OutFile $zip -TimeoutSec 180 -UseBasicParsing
+                if ((Get-Item $zip).Length -gt 1000) { $downloaded = $true; break }
+            } catch {}
+        }
+        if (-not $downloaded) { return "更新包下载失败，请检查网络后重试" }
         $dst = Join-Path $RootDir "_update_tmp"
         if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
         Expand-Archive -Path $zip -DestinationPath $dst -Force
