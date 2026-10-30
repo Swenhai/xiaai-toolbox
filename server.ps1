@@ -14,7 +14,7 @@ $script:Moves = [hashtable]::Synchronized(@{})   # key -> @{Step; Done; Err; Log
 $script:BigScan = $null
 
 # ---------------- 云端更新 ----------------
-$script:VERSION = "1.1.3"
+$script:VERSION = "1.1.4"
 $script:GH_BASE = "Swenhai/xiaai-toolbox"
 # 多源：jsDelivr（国内可达）优先，GitHub raw 备用
 $script:UPDATE_SOURCES = @(
@@ -768,6 +768,67 @@ function Start-MsiScan {
     $ps.BeginInvoke() | Out-Null
 }
 
+# ================= 内存加速（原生 API，无需第三方工具） =================
+if (-not ("MemHelper" -as [type])) {
+    Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public class MemHelper {
+    [DllImport("psapi.dll")] public static extern bool EmptyWorkingSet(IntPtr h);
+    [DllImport("kernel32.dll", SetLastError=true)] public static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
+    [DllImport("kernel32.dll")] public static extern bool CloseHandle(IntPtr h);
+    [DllImport("ntdll.dll")] public static extern int NtSetSystemInformation(int infoClass, ref int info, int len);
+    [StructLayout(LayoutKind.Sequential)]
+    public class MEMORYSTATUSEX {
+        public uint dwLength; public uint dwMemoryLoad;
+        public ulong ullTotalPhys, ullAvailPhys, ullTotalPageFile, ullAvailPageFile, ullTotalVirtual, ullAvailVirtual, ullAvailExtendedVirtual;
+    }
+    [DllImport("kernel32.dll")] public static extern bool GlobalMemoryStatusEx(MEMORYSTATUSEX s);
+    public static MEMORYSTATUSEX Status() {
+        var s = new MEMORYSTATUSEX(); s.dwLength = (uint)Marshal.SizeOf(s);
+        GlobalMemoryStatusEx(s); return s;
+    }
+    // 4=PurgeStandbyList 5=PurgeMemorySlist(已修改页待机列表)
+    public static int PurgeList(int cmd) {
+        int v = 0; return NtSetSystemInformation(80, ref v, 4) | 0;
+    }
+}
+"@
+}
+
+function Invoke-MemClean {
+    # 返回 [ordered]@{ freedMB, before, after }；需管理员权限才能清待机列表
+    $before = [Math]::Round([MemHelper]::Status().ullAvailPhys / 1MB)
+    $standbyErr = ""
+    try {
+        $r = [MemHelper]::PurgeList(4)
+        if ($r -ne 0) { $standbyErr = "standby:$r" }
+    } catch { $standbyErr = "standby:ex" }
+    $ws = 0
+    try {
+        foreach ($p in Get-Process) {
+            if ($p.Id -eq $PID) { continue }
+            try {
+                if ($p.Handle -ne [IntPtr]::Zero) {
+                    if ([MemHelper]::EmptyWorkingSet($p.Handle)) { $ws++ }
+                }
+            } catch {}
+        }
+    } catch {}
+    $after = [Math]::Round([MemHelper]::Status().ullAvailPhys / 1MB)
+    $freed = [Math]::Max(0, $after - $before)
+    return [ordered]@{ ok = $true; freedMB = $freed; before = $before; after = $after; procs = $ws; err = $standbyErr }
+}
+
+function Get-MemInfo {
+    try {
+        $s = [MemHelper]::Status()
+        return [ordered]@{ ok = $true; load = $s.dwMemoryLoad; totalGB = [Math]::Round($s.ullTotalPhys / 1GB, 1); availGB = [Math]::Round($s.ullAvailPhys / 1GB, 1) }
+    } catch {
+        return [ordered]@{ ok = $false; err = "内存接口仅支持 Windows" }
+    }
+}
+
 function Invoke-MsiClean {
     # 复用扫描结果，删除所有孤儿 .msi/.msp，返回释放字节数
     $st = $script:MsiScan
@@ -972,6 +1033,12 @@ while ($listener.IsListening) {
         elseif ($path -eq "/api/msi/clean" -and $req.HttpMethod -eq "POST") {
             $freed = Invoke-MsiClean
             Send-Json $ctx ([ordered]@{ ok = $true; freed = $freed })
+        }
+        elseif ($path -eq "/api/mem/info" -and $req.HttpMethod -eq "GET") {
+            Send-Json $ctx (Get-MemInfo)
+        }
+        elseif ($path -eq "/api/mem/clean" -and $req.HttpMethod -eq "POST") {
+            Send-Json $ctx (Invoke-MemClean)
         }
         elseif ($path -eq "/api/quit") {
             Send-Json $ctx ([ordered]@{ ok = $true })
