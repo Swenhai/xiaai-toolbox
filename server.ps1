@@ -14,7 +14,7 @@ $script:Moves = [hashtable]::Synchronized(@{})   # key -> @{Step; Done; Err; Log
 $script:BigScan = $null
 
 # ---------------- 云端更新 ----------------
-$script:VERSION = "1.1.6"
+$script:VERSION = "1.1.7"
 $script:GH_BASE = "Swenhai/xiaai-toolbox"
 # 多源：jsDelivr（国内可达）优先，GitHub raw 备用
 $script:UPDATE_SOURCES = @(

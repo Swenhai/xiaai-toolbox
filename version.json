@@ -1,5 +1,5 @@
 {
-  "version": "1.1.6",
+  "version": "1.1.7",
   "zip": "https://raw.githubusercontent.com/Swenhai/xiaai-toolbox/main/%E5%B0%8F%E8%89%BE%E8%89%BE%E5%B7%A5%E5%85%B7%E7%AE%B1%E6%9B%B4%E6%96%B0%E5%8C%85.zip",
-  "notes": "修复了一键更新时会显示「无法访问此页面」的问题：现在更新后会耐心等新版本就绪再进来，还会显示可爱的等待提示～"
+  "notes": "关于页换了一段更贴心的贴心话 ♡ 功能没有任何变化，就是想跟你说说话。"
 }
